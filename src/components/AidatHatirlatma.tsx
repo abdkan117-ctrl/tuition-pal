@@ -460,6 +460,15 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
         </Button>
       </div>
 
+      {mailHazir === false && (
+        <div className="mb-3 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Mail servisi şu anda bağlı değil. Panelin tüm bölümleri çalışır;
+          hazırladığınız metinleri kopyalayıp kendi e-postanızdan
+          gönderebilirsiniz.
+        </div>
+      )}
+
+
       {!menuAcik && (
         <div className="mb-3 grid grid-cols-3 gap-1 rounded-md bg-muted/40 p-1">
           {(
