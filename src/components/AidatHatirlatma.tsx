@@ -343,7 +343,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
               )?.ad
             : undefined) ?? ""
         : (gruplar.find((g) => g.id === a.anahtar)?.ad ?? "");
-      await aidatHatirlatmaGonder({
+      const s = await aidatHatirlatmaGonder({
         data: {
           eposta,
           hocaAdi: a.ad,
@@ -357,10 +357,13 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           gonderenAd: ayar.gonderenAd,
         },
       });
+      if (!mailSonuc(s)) return false;
       await aidatMailGonderimIsaretle(ayKey, a.anahtar, ayar.gonderilen);
       toast.success(`${a.ad} adresine hatırlatma gönderildi.`);
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
+      return false;
     } finally {
       setGonderiliyor(null);
     }
