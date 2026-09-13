@@ -68,26 +68,43 @@ export const serbestMailGonder = createServerFn({ method: "POST" })
     const lovableKey = process.env["LOVABLE_API_KEY"];
     const gmailKey = process.env["GOOGLE_MAIL_API_KEY"];
     if (!lovableKey || !gmailKey) {
-      throw new Error("Gmail bağlantısı bulunamadı.");
+      return {
+        ok: false as const,
+        baglantiYok: true as const,
+        hata: "Mail servisi bağlı değil. Gönderim yapılamadı.",
+      };
     }
 
-    const res = await fetch(`${GATEWAY_URL}/users/me/messages/send`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableKey}`,
-        "X-Connection-Api-Key": gmailKey,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        raw: rawMail(data.eposta, data.konu, data.metin, data.gonderen),
-      }),
-    });
+    try {
+      const res = await fetch(`${GATEWAY_URL}/users/me/messages/send`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableKey}`,
+          "X-Connection-Api-Key": gmailKey,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          raw: rawMail(data.eposta, data.konu, data.metin, data.gonderen),
+        }),
+      });
 
-    if (!res.ok) {
-      const hata = await res.text();
-      console.error(`Gmail gönderim hatası [${res.status}]: ${hata}`);
-      throw new Error(`E-posta gönderilemedi [${res.status}]: ${hata}`);
+      if (!res.ok) {
+        const hata = await res.text();
+        console.error(`Gmail gönderim hatası [${res.status}]: ${hata}`);
+        return {
+          ok: false as const,
+          baglantiYok: false as const,
+          hata: `E-posta gönderilemedi [${res.status}].`,
+        };
+      }
+
+      return { ok: true as const, baglantiYok: false as const, hata: "" };
+    } catch (e) {
+      console.error("Gmail gönderim hatası", e);
+      return {
+        ok: false as const,
+        baglantiYok: false as const,
+        hata: "E-posta servisine ulaşılamadı.",
+      };
     }
-
-    return { ok: true as const };
   });
