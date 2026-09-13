@@ -102,14 +102,33 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const [mesajMetin, setMesajMetin] = useState("");
 
 
+  const [mailHazir, setMailHazir] = useState<boolean | null>(null);
+
   useEffect(() => {
     const unsub = hocaMailAyarDinle((a) => {
       setAyar(a);
       setTaslak((t) => ({ ...a.mailler, ...t }));
     });
     void aidatTutariniOku().then(setTutar);
+    void mailDurumuAl()
+      .then((d) => setMailHazir(Boolean(d?.hazir)))
+      .catch(() => setMailHazir(false));
     return () => unsub();
   }, []);
+
+  const mailSonuc = (s: {
+    ok: boolean;
+    baglantiYok: boolean;
+    hata: string;
+  }) => {
+    if (s.baglantiYok) setMailHazir(false);
+    if (!s.ok) {
+      toast.error(s.hata || "E-posta gönderilemedi.");
+      return false;
+    }
+    setMailHazir(true);
+    return true;
+  };
 
   const gonderilenler = ayar.gonderilen[ayKey] ?? [];
 
