@@ -36,6 +36,7 @@ import {
 } from "@/lib/talebeler";
 import { aidatHatirlatmaGonder } from "@/lib/aidatMail.functions";
 import { serbestMailGonder } from "@/lib/mail.functions";
+import { mailDurumuAl } from "@/lib/mailDurum.functions";
 import { tamRaporOlustur } from "@/lib/rapor";
 import { useGruplar } from "@/hooks/use-gruplar";
 
