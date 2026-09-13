@@ -297,9 +297,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor("rapor-tum");
     try {
+      let basarili = 0;
       for (const a of hedefler) {
         // eslint-disable-next-line no-await-in-loop
-        await serbestMailGonder({
+        const s = await serbestMailGonder({
           data: {
             eposta: a.eposta.trim(),
             konu: raporKonu,
@@ -308,8 +309,12 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
             gonderenAd: ayar.gonderenAd,
           },
         });
+        if (!mailSonuc(s)) break;
+        basarili += 1;
       }
-      toast.success(`${hedefler.length} hocaya rapor gönderildi.`);
+      if (basarili > 0) {
+        toast.success(`${basarili} hocaya rapor gönderildi.`);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
