@@ -21,12 +21,12 @@ export type {
   HocaMailAyar,
 } from "./talebelerTipler";
 
-type FirestoreModul = typeof import("./talebelerFirestore");
+type FirestoreModul = typeof import("./talebelerSupabase");
 
 let modul: Promise<FirestoreModul> | null = null;
 
 function veriKatmani(): Promise<FirestoreModul> {
-  modul ??= import("./talebelerFirestore");
+  modul ??= import("./talebelerSupabase");
   return modul;
 }
 
