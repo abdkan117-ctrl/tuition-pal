@@ -80,7 +80,11 @@ export const aidatHatirlatmaGonder = createServerFn({ method: "POST" })
     const lovableKey = process.env["LOVABLE_API_KEY"];
     const gmailKey = process.env["GOOGLE_MAIL_API_KEY"];
     if (!lovableKey || !gmailKey) {
-      throw new Error("Gmail bağlantısı bulunamadı.");
+      return {
+        ok: false as const,
+        baglantiYok: true as const,
+        hata: "Mail servisi bağlı değil. Gönderim yapılamadı.",
+      };
     }
 
     const konu = `Aidat Hatırlatması — ${data.ayEtiket}${
