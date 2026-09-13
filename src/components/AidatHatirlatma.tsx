@@ -256,9 +256,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor("mesaj");
     try {
+      let basarili = 0;
       for (const eposta of hedefler) {
         // eslint-disable-next-line no-await-in-loop
-        await serbestMailGonder({
+        const s = await serbestMailGonder({
           data: {
             eposta,
             konu: mesajKonu,
@@ -267,12 +268,16 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
             gonderenAd: ayar.gonderenAd,
           },
         });
+        if (!mailSonuc(s)) break;
+        basarili += 1;
       }
-      toast.success(
-        hedefler.length === 1
-          ? `${hedefler[0]} adresine gönderildi.`
-          : `${hedefler.length} kişiye gönderildi.`,
-      );
+      if (basarili > 0) {
+        toast.success(
+          basarili === 1
+            ? `${hedefler[0]} adresine gönderildi.`
+            : `${basarili} kişiye gönderildi.`,
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
