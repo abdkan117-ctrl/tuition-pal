@@ -226,10 +226,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor(tur);
     try {
-      await serbestMailGonder({
+      const s = await serbestMailGonder({
         data: { eposta, konu, metin, gonderen: ayar.gonderen, gonderenAd: ayar.gonderenAd },
       });
-      toast.success(`${eposta} adresine gönderildi.`);
+      if (mailSonuc(s)) toast.success(`${eposta} adresine gönderildi.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
