@@ -36,6 +36,7 @@ import {
 } from "@/lib/talebeler";
 import { aidatHatirlatmaGonder } from "@/lib/aidatMail.functions";
 import { serbestMailGonder } from "@/lib/mail.functions";
+import { mailDurumuAl } from "@/lib/mailDurum.functions";
 import { tamRaporOlustur } from "@/lib/rapor";
 import { useGruplar } from "@/hooks/use-gruplar";
 
@@ -101,14 +102,33 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const [mesajMetin, setMesajMetin] = useState("");
 
 
+  const [mailHazir, setMailHazir] = useState<boolean | null>(null);
+
   useEffect(() => {
     const unsub = hocaMailAyarDinle((a) => {
       setAyar(a);
       setTaslak((t) => ({ ...a.mailler, ...t }));
     });
     void aidatTutariniOku().then(setTutar);
+    void mailDurumuAl()
+      .then((d) => setMailHazir(Boolean(d?.hazir)))
+      .catch(() => setMailHazir(false));
     return () => unsub();
   }, []);
+
+  const mailSonuc = (s: {
+    ok: boolean;
+    baglantiYok: boolean;
+    hata: string;
+  }) => {
+    if (s.baglantiYok) setMailHazir(false);
+    if (!s.ok) {
+      toast.error(s.hata || "E-posta gönderilemedi.");
+      return false;
+    }
+    setMailHazir(true);
+    return true;
+  };
 
   const gonderilenler = ayar.gonderilen[ayKey] ?? [];
 
@@ -206,10 +226,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor(tur);
     try {
-      await serbestMailGonder({
+      const s = await serbestMailGonder({
         data: { eposta, konu, metin, gonderen: ayar.gonderen, gonderenAd: ayar.gonderenAd },
       });
-      toast.success(`${eposta} adresine gönderildi.`);
+      if (mailSonuc(s)) toast.success(`${eposta} adresine gönderildi.`);
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
@@ -236,9 +256,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor("mesaj");
     try {
+      let basarili = 0;
       for (const eposta of hedefler) {
         // eslint-disable-next-line no-await-in-loop
-        await serbestMailGonder({
+        const s = await serbestMailGonder({
           data: {
             eposta,
             konu: mesajKonu,
@@ -247,12 +268,16 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
             gonderenAd: ayar.gonderenAd,
           },
         });
+        if (!mailSonuc(s)) break;
+        basarili += 1;
       }
-      toast.success(
-        hedefler.length === 1
-          ? `${hedefler[0]} adresine gönderildi.`
-          : `${hedefler.length} kişiye gönderildi.`,
-      );
+      if (basarili > 0) {
+        toast.success(
+          basarili === 1
+            ? `${hedefler[0]} adresine gönderildi.`
+            : `${basarili} kişiye gönderildi.`,
+        );
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
@@ -272,9 +297,10 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     }
     setGonderiliyor("rapor-tum");
     try {
+      let basarili = 0;
       for (const a of hedefler) {
         // eslint-disable-next-line no-await-in-loop
-        await serbestMailGonder({
+        const s = await serbestMailGonder({
           data: {
             eposta: a.eposta.trim(),
             konu: raporKonu,
@@ -283,8 +309,12 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
             gonderenAd: ayar.gonderenAd,
           },
         });
+        if (!mailSonuc(s)) break;
+        basarili += 1;
       }
-      toast.success(`${hedefler.length} hocaya rapor gönderildi.`);
+      if (basarili > 0) {
+        toast.success(`${basarili} hocaya rapor gönderildi.`);
+      }
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
     } finally {
@@ -297,7 +327,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     const eposta = a.eposta.trim();
     if (!eposta) {
       toast.error("Önce hocanın e-posta adresini yazın.");
-      return;
+      return false;
     }
     setGonderiliyor(a.anahtar);
     try {
@@ -313,7 +343,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
               )?.ad
             : undefined) ?? ""
         : (gruplar.find((g) => g.id === a.anahtar)?.ad ?? "");
-      await aidatHatirlatmaGonder({
+      const s = await aidatHatirlatmaGonder({
         data: {
           eposta,
           hocaAdi: a.ad,
@@ -327,10 +357,13 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           gonderenAd: ayar.gonderenAd,
         },
       });
+      if (!mailSonuc(s)) return false;
       await aidatMailGonderimIsaretle(ayKey, a.anahtar, ayar.gonderilen);
       toast.success(`${a.ad} adresine hatırlatma gönderildi.`);
+      return true;
     } catch (e) {
       toast.error(e instanceof Error ? e.message : "E-posta gönderilemedi.");
+      return false;
     } finally {
       setGonderiliyor(null);
     }
@@ -343,7 +376,8 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const hepsineGonder = async () => {
     for (const a of gonderilmeyen) {
       // eslint-disable-next-line no-await-in-loop
-      await gonder(a);
+      const ok = await gonder(a);
+      if (!ok) break;
     }
   };
 
@@ -425,6 +459,15 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
           {menuAcik ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
         </Button>
       </div>
+
+      {mailHazir === false && (
+        <div className="mb-3 rounded-md border border-border/60 bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+          Mail servisi şu anda bağlı değil. Panelin tüm bölümleri çalışır;
+          hazırladığınız metinleri kopyalayıp kendi e-postanızdan
+          gönderebilirsiniz.
+        </div>
+      )}
+
 
       {!menuAcik && (
         <div className="mb-3 grid grid-cols-3 gap-1 rounded-md bg-muted/40 p-1">
