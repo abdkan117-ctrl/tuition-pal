@@ -327,7 +327,7 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
     const eposta = a.eposta.trim();
     if (!eposta) {
       toast.error("Önce hocanın e-posta adresini yazın.");
-      return;
+      return false;
     }
     setGonderiliyor(a.anahtar);
     try {
