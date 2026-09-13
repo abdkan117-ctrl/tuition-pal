@@ -376,7 +376,8 @@ export default function AidatHatirlatma({ talebeler }: { talebeler: Talebe[] }) 
   const hepsineGonder = async () => {
     for (const a of gonderilmeyen) {
       // eslint-disable-next-line no-await-in-loop
-      await gonder(a);
+      const ok = await gonder(a);
+      if (!ok) break;
     }
   };
 
